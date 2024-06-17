@@ -1,7 +1,7 @@
-import status from "express/lib/response.js";
 import User from "../models/user.js"
-import { createToken } from "../services/jwt.js"
 import bcrypt from "bcrypt";
+import { createToken } from "../services/jwt.js"
+import user from "../models/user.js";
 
 
 //Accion de prueba
@@ -99,14 +99,13 @@ export const login = async (req, res) => {
         }
 
         // Comprobar si el password recibido es igual al que está almacenado en la BD
-        //const validPassword = await bcrypt.compare(params.password, user.password);
+        const validPassword = await bcrypt.compare(params.password, user.password);
 
         // Si los passwords no coinciden
-        //if (!validPassword) {
-        if (params.password != user.password) {
+        if (!validPassword) {
             return res.status(401).json({
-                status: "error",
-                message: "Contraseña incorrecta"
+            status: "error",
+            message: "Contraseña incorrecta"
             });
         }
 
