@@ -1,0 +1,54 @@
+curl --location 'http://localhost:3900/api/user/register' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'name=Andrea' \
+--data-urlencode 'last_name=Murcia' \
+--data-urlencode 'nick=@Am' \
+--data-urlencode 'email=am@gmail.com' \
+--data-urlencode 'password=123456' \
+--data-urlencode 'bio=bioooo'
+
+
+
+curl --location 'http://localhost:3900/api/user/register' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "user10",
+    "last_name": "apellido",
+    "email": "u10@gmail.com",
+    "nick": "@u10",
+    "password": "12345",
+    "bio": "bioo10"
+}'
+
+
+
+curl --location --request GET 'http://localhost:3900/api/user/test-user' \
+--header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjZjZjQ0OWNiMDgzYTNjNmJiM2EzNDEiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6IkVkd2luIiwiaWF0IjoxNzE4NDIwNjQ5LCJleHAiOjE3MjEwMTI2NDl9.4DUUw7iHGek6viDw5h54Ks0OtB1njCqAFm7lPWXjDn4' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "password": "123456",
+    "email": "ecr@gmail.com"
+}'
+
+
+
+curl --location 'http://localhost:3900/api/user/login' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "password": "123456",
+    "email": "ecr@gmail.com"
+}'
+
+
+curl --location --request GET 'http://localhost:3900/api/user/test-user' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "password": "123456",
+    "email": "ecr@gmail.com"
+}'
+
+
+curl --location 'http://localhost:3900/api/user/profile/666cf449cb083a3c6bb3a341' \
+--header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjZjZjQ0OWNiMDgzYTNjNmJiM2EzNDEiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6IkVkd2luIiwiaWF0IjoxNzE4NDIwNjQ5LCJleHAiOjE3MjEwMTI2NDl9.4DUUw7iHGek6viDw5h54Ks0OtB1njCqAFm7lPWXjDn4' \
+--data ''
+
