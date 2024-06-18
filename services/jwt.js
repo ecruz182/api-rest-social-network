@@ -3,8 +3,8 @@ import moment from 'moment';
 
 const secret = 'SECRET_KEY_PrUeBa';
 
-const createToken = (user) =>{
-    const payload ={
+const createToken = (user) => {
+    const payload = {
         userId: user._id,
         role: user.role,
         name: user.name,
@@ -15,4 +15,4 @@ const createToken = (user) =>{
     return jwt.encode(payload, secret);
 };
 
-export{secret, createToken};
+export { secret, createToken };
