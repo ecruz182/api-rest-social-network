@@ -42,6 +42,11 @@ curl --location --request PUT 'http://localhost:3900/api/user/update' \
 }'
 
 
+curl --location 'http://localhost:3900/api/user/upload' \
+--header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjcwYzE3YjE2N2E0NGNmOGRmNDg2ZWUiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6InVzZXIxMSIsImlhdCI6MTcxODY2NTkzNCwiZXhwIjoxNzIxMjU3OTM0fQ.haBobVHSO6Z4lS5MHbcaHr7_R0nv0d6sW8C1qQgZNdc' \
+--form 'file0=@"/C:/Users/Edwin/Downloads/logo.png"'
+
+
 
 curl --location 'http://localhost:3900/api/user/login' \
 --header 'Content-Type: application/json' \

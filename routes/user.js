@@ -1,6 +1,6 @@
 //Importaciones
 import { Router } from "express";
-import { testUser, register, login, profile, listUsers, updateUser, uploadFiles } from "../controllers/user.js";
+import { testUser, register, login, profile, listUsers, updateUser, uploadFiles, avatar } from "../controllers/user.js";
 import { ensureAuth } from "../middlewares/auth.js"
 import multer from "multer";
 const router = Router();
@@ -27,6 +27,7 @@ router.get('/profile/:id', ensureAuth, profile);
 router.get('/list/:page?', ensureAuth, listUsers);
 router.put('/update', ensureAuth, updateUser);
 router.post('/upload', [ensureAuth, uploadAvatar.single("file0")], uploadFiles);
+router.get('/avatar/:file', ensureAuth, avatar);
 
 //Exportar el Router
 export default router;

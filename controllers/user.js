@@ -2,7 +2,7 @@ import User from "../models/user.js"
 import bcrypt from "bcrypt";
 import { createToken } from "../services/jwt.js"
 import fs from "fs";
-
+import path from 'path';
 
 //Accion de prueba
 export const testUser = (req, res) => {
@@ -300,7 +300,7 @@ export const updateUser = async (req, res) => {
     }
 }
 
- 
+
 // Método para subir imágenes (AVATAR - img de perfil)  y actualizar la imgen de perfil
 export const uploadFiles = async (req, res) => {
     try {
@@ -331,6 +331,20 @@ export const uploadFiles = async (req, res) => {
             });
         }
 
+        // Comprobar tamaño del archivo (pj: máximo 1MB)
+        const fileSize = req.file.size;
+        const maxFileSize = 1 * 1024 * 1024; // 1 MB
+
+        if (fileSize > maxFileSize) {
+            const filePath = req.file.path;
+            fs.unlinkSync(filePath);
+
+            return res.status(400).send({
+                status: "error",
+                message: "El tamaño del archivo excede el límite (máx 1MB)"
+            });
+        }
+
         //Guardar la imagen en la BD
         const userUpdated = await User.findOneAndUpdate(
             { _id: req.user.userId },
@@ -338,7 +352,7 @@ export const uploadFiles = async (req, res) => {
             { new: true }
         );
 
-        if(!userUpdated){
+        if (!userUpdated) {
             return res.status(400).send({
                 status: "error",
                 message: "Error en la subida de la imagen"
@@ -361,3 +375,38 @@ export const uploadFiles = async (req, res) => {
         });
     }
 }
+
+
+//Metodo para mostrar la imagen de prefil
+export const avatar = async (req, res) => {
+    try {
+        //Obtener el parametro de la url
+        const file = req.params.file;
+
+        //Obtener el path real de la imagen
+        const filePath = "./uploads/avatars/" + file;
+
+        //Comprobamos si existe
+        fs.stat(filePath, (error, exists) => {
+            if (!exists) {
+                return res.status(400).send({
+                    status: "error",
+                    message: "No existe la imagen"
+                });
+
+            }
+        })
+
+        //Devolver el archivo
+        return res.sendFile(path.resolve(filePath));
+    } catch (error) {
+        console.log("Error al mostrar la imagen", error);
+        return res.status(500).send({
+            status: "error",
+            message: "Error al mostra la imagen"
+        });
+
+    }
+}
+
+
