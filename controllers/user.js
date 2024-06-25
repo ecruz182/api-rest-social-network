@@ -2,26 +2,27 @@ import User from "../models/user.js"
 import bcrypt from "bcrypt";
 import { createToken } from "../services/jwt.js"
 import fs from "fs";
-import path from 'path';
+import path from "path";
+import { followThisUser, followUserIds } from "../services/followServices.js"
 
-//Accion de prueba
+// Acciones de prueba
 export const testUser = (req, res) => {
     return res.status(200).send({
-        message: "mensaje ok user"
+        message: "Mensaje enviado desde el controlador: user.js"
     });
 }
 
-//Registro de usuario
+// Método para Registrar de usuarios
 export const register = async (req, res) => {
     try {
-        //Recoge datos de la peticion
+        // Recoger datos de la petición
         let params = req.body;
 
-        //Validar los datos
+        // Validaciones: verificamos que los datos obligatorios estén presentes
         if (!params.name || !params.last_name || !params.email || !params.password || !params.nick) {
-            return res.status(400).send({
+            return res.status(400).json({
                 status: "error",
-                message: "Faltan datos por enviar",
+                message: "Faltan datos por enviar"
             });
         }
 
@@ -52,7 +53,6 @@ export const register = async (req, res) => {
         // Guardar el usuario en la base de datos
         await user_to_save.save();
 
-
         // Devolver respuesta exitosa y el usuario registrado
         return res.status(201).json({
             status: "created",
@@ -60,17 +60,14 @@ export const register = async (req, res) => {
             user: user_to_save
         });
 
-
     } catch (error) {
-        console.log("Error en registro de usuario", error);
-        return res.status(500).send({
+        console.log("Error en registro de usuario:", error);
+        return res.status(500).json({
             status: "error",
             message: "Error en registro de usuarios"
-        })
+        });
     }
 }
-
-//Metodo para autenticar usuarios
 
 // Método para autenticar usuarios
 export const login = async (req, res) => {
@@ -139,39 +136,51 @@ export const login = async (req, res) => {
     }
 }
 
-
-//Metodo para mostrar el perfil del usuario
+// Método para mostrar el perfil del usuario
 export const profile = async (req, res) => {
     try {
-        //obtener el id del usuario desde los parametros
+        // Obtener el ID del usuario desde los parámetros de la URL
         const userId = req.params.id;
 
-        //Buscar el usuario en la BD, excluimos contrase;a y rol
-        const user = await User.findById(userId).select('-password -role -__v');
+        // Verificar si el ID recibido del usuario autenticado existe
+        if (!req.user || !req.user.userId) {
+            return res.status(404).send({
+                status: "error",
+                message: "Usuario no autenticado"
+            });
+        }
 
-        //Verificar si el usuario existe
-        if (!user) {
+        // Buscar al usuario en la BD, excluimos la contraseña, rol, versión.
+        const userProfile = await User.findById(userId).select('-password -role -__v -email');
+
+
+        // Verificar si el usuario existe
+        if (!userProfile) {
             return res.status(404).send({
                 status: "error",
                 message: "Usuario no encontrado"
-            })
+            });
         }
 
-        //Devolver la informacion del perfil del usuario
+        // Información de seguimiento - (req.user.userId = Id del usuario autenticado) 
+        //console.log("user ed1 -> " +req.user.userId);
+        const followInfo = await followThisUser(req.user.userId, userId);
+
+        // Devolver la información del perfil del usuario
         return res.status(200).json({
-            status: "succes",
-            user
+            status: "success",
+            user: userProfile,
+            followInfo
         });
 
     } catch (error) {
-        console.log(error);
+        console.log("Error al botener el perfil del usuario:", error);
         return res.status(500).send({
             status: "error",
             message: "Error al obtener el perfil del usuario"
         });
     }
 }
-
 
 // Método para listar usuarios con paginación
 export const listUsers = async (req, res) => {
@@ -184,7 +193,7 @@ export const listUsers = async (req, res) => {
         const options = {
             page: page,
             limit: itemsPerPage,
-            select: '-password -role -__v'
+            select: '-password -role -__v -email'
         };
 
         const users = await User.paginate({}, options);
@@ -197,6 +206,9 @@ export const listUsers = async (req, res) => {
             });
         }
 
+        // Listar los seguidores de un usuario, obtener el array de IDs de los usuarios que sigo
+        let followUsers = await followUserIds(req);
+
         // Devolver los usuarios paginados
         return res.status(200).json({
             status: "success",
@@ -208,7 +220,9 @@ export const listUsers = async (req, res) => {
             hasPrevPage: users.hasPrevPage,
             hasNextPage: users.hasNextPage,
             prevPage: users.prevPage,
-            nextPage: users.nextPage
+            nextPage: users.nextPage,
+            users_following: followUsers.following,
+            user_follow_me: followUsers.followers
         });
     } catch (error) {
         console.log("Error al listar los usuarios:", error);
@@ -219,80 +233,80 @@ export const listUsers = async (req, res) => {
     }
 }
 
-
-//Metodo para actualizar los datos del usuario
+// Método para actualizar los datos del usuario
 export const updateUser = async (req, res) => {
     try {
-        //Recoger informacion del usuario a actualizar
+        // Recoger información del usuario a actualizar
         let userIdentity = req.user;
         let userToUpdate = req.body;
 
-        //Validar que los campos necesarios esten presentes
+        // Validar que los campos necesarios estén presentes
         if (!userToUpdate.email || !userToUpdate.nick) {
             return res.status(400).send({
                 status: "error",
-                message: "Los campos email y nick son requeridos"
+                message: "¡Los campos email y nick son requeridos!"
             });
         }
 
-        //Eliminar campos sobrantes(no se actualizan)
+        // Eliminar campos sobrantes
         delete userToUpdate.iat;
         delete userToUpdate.exp;
         delete userToUpdate.role;
         delete userToUpdate.image;
 
-        //Comprobar si el usario ya existe
-        const user = await User.find({
+        // Comprobar si el usuario ya existe
+        const users = await User.find({
             $or: [
                 { email: userToUpdate.email.toLowerCase() },
                 { nick: userToUpdate.nick.toLowerCase() }
             ]
         }).exec();
 
-        //Verificar si el usuaio esta duplicado y evitar conflicto
-        const isDuplicateUser = user.some(usr => {
-            return usr && usr._id.toString() !== userIdentity.userId;
+        // Verificar si el usuario está duplicado y evitar conflicto
+        const isDuplicateUser = users.some(user => {
+            return user && user._id.toString() !== userIdentity.userId;
         });
 
         if (isDuplicateUser) {
             return res.status(400).send({
                 status: "error",
-                message: "Solo se puede modificar del usuario logueado"
+                message: "Solo se puede modificar los datos del usuario logueado."
             });
         }
 
-        //Cifrar contrase;a si viene para modificar
+        // Cifrar la contraseña si se proporciona
         if (userToUpdate.password) {
             try {
                 let pwd = await bcrypt.hash(userToUpdate.password, 10);
                 userToUpdate.password = pwd;
-            } catch (hasherror) {
+            } catch (hashError) {
                 return res.status(500).send({
                     status: "error",
-                    message: "Error al cifrar la contrase;a"
+                    message: "Error al cifrar la contraseña"
                 });
             }
-        } else delete userToUpdate.password;
+        } else {
+            delete userToUpdate.password;
+        }
 
-        //Buscar y actualizar el usuario a modificar en la BD
+        // Buscar y Actualizar el usuario a modificar en la BD
         let userUpdated = await User.findByIdAndUpdate(userIdentity.userId, userToUpdate, { new: true });
+
         if (!userUpdated) {
-            return res.status(500).send({
+            return res.status(400).send({
                 status: "error",
                 message: "Error al actualizar el usuario"
             });
-
         }
 
-        //Retornar respuesta exitosa con el usuario actualizado
+        // Devolver respuesta exitosa con el usuario actualizado
         return res.status(200).json({
             status: "success",
-            message: "Usuario actualizado correctamente!",
+            message: "¡Usuario actualizado correctamente!",
             user: userUpdated
         });
-
     } catch (error) {
-        console.log("Error al actualizar los datos del usuario:", error);
+        console.log("Error al actualizar los datos del usuario", error);
         return res.status(500).send({
             status: "error",
             message: "Error al actualizar los datos del usuario"
@@ -300,34 +314,33 @@ export const updateUser = async (req, res) => {
     }
 }
 
-
-// Método para subir imágenes (AVATAR - img de perfil)  y actualizar la imgen de perfil
+// Método para subir imágenes (AVATAR - img de perfil) y Actualizar la imagen de perfil
 export const uploadFiles = async (req, res) => {
     try {
-        //Recoger el archivo de la imagen y comporbar que existe
+        // Recoger el archivo de imagen y comprobarmos que existe
         if (!req.file) {
-            return res.status(400).send({
+            return res.status(404).send({
                 status: "error",
-                message: "La peticion no incluye la imagen"
+                message: "La petición no incluye la imagen"
             });
         }
 
-        //conseguir el nombre del archivo
+        // Conseguir el nombre del archivo
         let image = req.file.originalname;
 
-        //obtener la extension del archivo
+        // Obtener la extensión del archivo
         const imageSplit = image.split(".");
-        const extension = imageSplit[imageSplit.length - 1]
+        const extension = imageSplit[imageSplit.length - 1];
 
-        //validar la extension
-        if (!["png", "jpg", "jpeg", "gift"].includes(extension.toLowerCase())) {
+        // Validar la extensión
+        if (!["png", "jpg", "jpeg", "gif"].includes(extension.toLowerCase())) {
             //Borrar archivo subido
             const filePath = req.file.path;
             fs.unlinkSync(filePath);
 
             return res.status(400).send({
                 status: "error",
-                message: "La extension del archivo es invalida"
+                message: "Extensión del archivo es inválida."
             });
         }
 
@@ -341,28 +354,28 @@ export const uploadFiles = async (req, res) => {
 
             return res.status(400).send({
                 status: "error",
-                message: "El tamaño del archivo excede el límite (máx 1MB)"
+                message: "El tamaño del archivo excede el límite (máx 1 MB)"
             });
         }
 
-        //Guardar la imagen en la BD
+        // Guardar la imagen en la BD
         const userUpdated = await User.findOneAndUpdate(
             { _id: req.user.userId },
             { image: req.file.filename },
             { new: true }
         );
 
+        // verificar si la actualización fue exitosa
         if (!userUpdated) {
-            return res.status(400).send({
+            return res.status(500).send({
                 status: "error",
-                message: "Error en la subida de la imagen"
+                message: "Eror en la subida de la imagen"
             });
         }
 
         // Devolver respuesta exitosa 
         return res.status(200).json({
             status: "success",
-            message: "Se actualizo la imagen de perfil",
             user: userUpdated,
             file: req.file
         });
@@ -376,37 +389,32 @@ export const uploadFiles = async (req, res) => {
     }
 }
 
-
-//Metodo para mostrar la imagen de prefil
+// Método para mostrar la imagen del perfil (AVATAR)
 export const avatar = async (req, res) => {
     try {
-        //Obtener el parametro de la url
+        // Obtener el parámetro de la url
         const file = req.params.file;
 
-        //Obtener el path real de la imagen
+        // Obtener el path real de la imagen
         const filePath = "./uploads/avatars/" + file;
 
-        //Comprobamos si existe
+        // Comprobamos si existe
         fs.stat(filePath, (error, exists) => {
             if (!exists) {
-                return res.status(400).send({
+                return res.status(404).send({
                     status: "error",
                     message: "No existe la imagen"
                 });
-
             }
-        })
+            // Devolver el archivo
+            return res.sendFile(path.resolve(filePath));
+        });
 
-        //Devolver el archivo
-        return res.sendFile(path.resolve(filePath));
     } catch (error) {
         console.log("Error al mostrar la imagen", error);
         return res.status(500).send({
             status: "error",
-            message: "Error al mostra la imagen"
+            message: "Error al mostrar la imagen"
         });
-
     }
 }
-
-

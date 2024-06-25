@@ -42,6 +42,13 @@ curl --location --request PUT 'http://localhost:3900/api/user/update' \
 }'
 
 
+curl --location 'http://localhost:3900/api/follow/follow' \
+--header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjcwYzE3YjE2N2E0NGNmOGRmNDg2ZWUiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6InVzZXIxMSIsImlhdCI6MTcxOTM0Njc1MSwiZXhwIjoxNzIxOTM4NzUxfQ.eskzTBssAjkWp7CAb2cPQX-ZnwtohwqoDp5RGV7JbVE' \
+--header 'Content-Type: application/json' \
+--data '{
+    "followed_user": "6670c17b167a44cf8df486ee"
+}'
+
 curl --location 'http://localhost:3900/api/user/upload' \
 --header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjcwYzE3YjE2N2E0NGNmOGRmNDg2ZWUiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6InVzZXIxMSIsImlhdCI6MTcxODY2NTkzNCwiZXhwIjoxNzIxMjU3OTM0fQ.haBobVHSO6Z4lS5MHbcaHr7_R0nv0d6sW8C1qQgZNdc' \
 --form 'file0=@"/C:/Users/Edwin/Downloads/logo.png"'
@@ -68,3 +75,9 @@ curl --location 'http://localhost:3900/api/user/profile/666cf449cb083a3c6bb3a341
 --header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjZjZjQ0OWNiMDgzYTNjNmJiM2EzNDEiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6IkVkd2luIiwiaWF0IjoxNzE4NDIwNjQ5LCJleHAiOjE3MjEwMTI2NDl9.4DUUw7iHGek6viDw5h54Ks0OtB1njCqAFm7lPWXjDn4' \
 --data ''
 
+curl --location 'http://localhost:3900/api/publications/new-publication' \
+--header 'Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NjZjZjQ0OWNiMDgzYTNjNmJiM2EzNDEiLCJyb2xlIjoicm9sZV91c2VyIiwibmFtZSI6IkVkd2luIiwiaWF0IjoxNzE4NDIwNjQ5LCJleHAiOjE3MjEwMTI2NDl9.4DUUw7iHGek6viDw5h54Ks0OtB1njCqAFm7lPWXjDn4' \
+--header 'Content-Type: application/json' \
+--data '{
+    "text":"Hola"
+}'
